@@ -82,7 +82,7 @@ async def authenticate_user(username: str, response: Response):
 
     if user is None:
         response.status_code = 404
-        return {"error": "User not found"}
+        return {}
 
     if user["logged_in"]:
         response.status_code = 400
