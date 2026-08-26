@@ -74,6 +74,11 @@ async def authenticate_user(username: str):
     user = db_client.get_user_by_username(username)
     if user is None:
         return {"error": "User not found"}
+
+    if user["logged_in"]:
+        return {"error": "User already logged in"}
+
+    db_client.login_user(user["id"])  # Log the user in
     
     return User(id=user["id"], username=user["username"], color=user["color"])
 

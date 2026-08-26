@@ -61,3 +61,15 @@ class DatabaseClient:
                     return {"id": row[0], "username": row[1], "color": row[2]}
                 else:
                     return None
+
+    def login_user(self, user_id: int):
+        with psycopg.connect(self.database_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE users SET logged_in = TRUE WHERE id = %s", (user_id,))
+                conn.commit()
+
+    def logout_user(self, user_id: int):
+        with psycopg.connect(self.database_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE users SET logged_in = FALSE WHERE id = %s", (user_id,))
+                conn.commit()
