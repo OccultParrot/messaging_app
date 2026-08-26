@@ -1,0 +1,73 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+from database_client import DatabaseClient
+
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
+
+db_url = os.getenv("DATABASE_URL")
+
+if not db_url:
+    raise ValueError("DATABASE_URL environment variable is not set.")
+
+db_client = DatabaseClient(db_url)
+
+class Message(BaseModel):
+    id: int | None = None
+    content: str
+    user_id: int
+
+class MessagesGet(BaseModel):
+    contents: list[Message]
+
+class UsersGet(BaseModel):
+    contents: list[User]
+
+class User(BaseModel):
+    id: int | None = None
+    username: str
+    color: str # As a hex code string, e.g., "#FF5733"
+
+app = FastAPI()
+
+@app.get("/")
+async def read_root():
+    return {"Hello": "World"}
+
+"""
+Routes we need.
+/api/messages - GET - Get all messages
+/api/messages - POST - Create a new message
+
+/api/users - GET - Get all users
+/api/users/{user_id} - GET - Get a specific user by ID
+/api/users - POST - Create a new user
+"""
+
+@app.get("/api/messages", response_model=MessagesGet)
+async def get_messages():
+    messages = db_client.get_messages()
+    return {"contents": messages}
+
+@app.post("/api/messages")
+async def create_message(message: Message):
+    db_client.put_message(message.model_dump())
+    return {"status": "Message created"}
+
+@app.get("/api/users", response_model=UsersGet)
+async def get_users():
+    users = db_client.get_users()
+    return {"contents": users}
+
+@app.get("/api/users/{user_id}", response_model=User)
+async def get_user(user_id: int):
+    user = db_client.get_user(user_id)
+    return user
+
+@app.post("/api/users")
+async def create_user(user: User):
+    db_client.put_user(user.model_dump())
+    return {"status": "User created"}
