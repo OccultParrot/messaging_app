@@ -82,6 +82,19 @@ async def authenticate_user(username: str):
     
     return User(id=user["id"], username=user["username"], color=user["color"])
 
+@app.post("/api/logout/{username}")
+async def logout_user(username: str):
+    user = db_client.get_user_by_username(username)
+    if user is None:
+        return {"error": "User not found"}
+
+    if not user["logged_in"]:
+        return {"error": "User is not logged in"}
+
+    db_client.logout_user(user["id"])  # Log the user out
+    
+    return {"status": "User logged out"}
+
 @app.post("/api/users")
 async def create_user(user: User):
     db_client.put_user(user.model_dump())
