@@ -108,7 +108,7 @@ async def create_user(user: User):
     return user_data
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket):
+async def websocket_endpoint(websocket, user_id: int):
     await websocket.accept()
     while True:
         data = await websocket.receive_text()
