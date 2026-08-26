@@ -77,6 +77,9 @@ async def get_user(user_id: int, response: Response):
 @app.get("/api/auth/{username}", response_model=User)
 async def authenticate_user(username: str, response: Response):
     user = db_client.get_user_by_username(username)
+
+    print(user)
+
     if user is None:
         response.status_code = 404
         return {"error": "User not found"}
@@ -106,11 +109,14 @@ async def logout_user(username: str, response: Response):
     response.status_code = 200
     return {"status": "User logged out"}
 
-@app.post("/api/users")
+@app.post("/api/users", response_model=User)
 async def create_user(user: User, response: Response):
     db_client.put_user(user.model_dump())
+
+    user_data = db_client.get_user_by_username(user.username)
+
     response.status_code = 201
-    return {"status": "User created"}
+    return user_data
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket):
