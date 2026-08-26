@@ -65,9 +65,27 @@ async def get_users():
 @app.get("/api/users/{user_id}", response_model=User)
 async def get_user(user_id: int):
     user = db_client.get_user(user_id)
-    return user
+    if user is None:
+        return {"error": "User not found"}
+    return User(id=user["id"], username=user["username"], color=user["color"])
+
+@app.get("/api/auth/{username}", response_model=User)
+async def authenticate_user(username: str):
+    user = db_client.get_user_by_username(username)
+    if user is None:
+        return {"error": "User not found"}
+    
+    return User(id=user["id"], username=user["username"], color=user["color"])
 
 @app.post("/api/users")
 async def create_user(user: User):
     db_client.put_user(user.model_dump())
     return {"status": "User created"}
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket):
+    await websocket.accept()
+    while True:
+        data = await websocket.receive_text()
+        # Here you can handle the received data, e.g., broadcast it to other clients
+        await websocket.send_text(f"Message received: {data}")

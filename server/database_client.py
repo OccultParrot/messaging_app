@@ -51,3 +51,13 @@ class DatabaseClient:
                     return {"id": row[0], "username": row[1], "color": row[2]}
                 else:
                     return None
+
+    def get_user_by_username(self, username: str):
+        with psycopg.connect(self.database_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id, username, color FROM users WHERE username = %s", (username,))
+                row = cur.fetchone()
+                if row:
+                    return {"id": row[0], "username": row[1], "color": row[2]}
+                else:
+                    return None
