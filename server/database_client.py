@@ -38,27 +38,28 @@ class DatabaseClient:
     def get_users(self):
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT id, username, color FROM users")
+                cur.execute("SELECT id, username, color, logged_in FROM users")
                 rows = cur.fetchall()
-                return [{"id": row[0], "username": row[1], "color": row[2]} for row in rows]
+                return [{"id": row[0], "username": row[1], "color": row[2], "logged_in": row[3]} for row in rows]
 
     def get_user(self, user_id: int):
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT id, username, color FROM users WHERE id = %s", (user_id,))
+                cur.execute("SELECT id, username, color, logged_in FROM users WHERE id = %s", (user_id,))
                 row = cur.fetchone()
                 if row:
-                    return {"id": row[0], "username": row[1], "color": row[2]}
+                    return {"id": row[0], "username": row[1], "color": row[2], "logged_in": row[3]}
                 else:
                     return None
 
     def get_user_by_username(self, username: str):
         with psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT id, username, color FROM users WHERE username = %s", (username,))
+                cur.execute("SELECT id, username, color, logged_in FROM users WHERE username = %s", (username,))
                 row = cur.fetchone()
                 if row:
-                    return {"id": row[0], "username": row[1], "color": row[2]}
+                    print(row)  # Debugging line to print the fetched row
+                    return {"id": row[0], "username": row[1], "color": row[2], "logged_in": row[3]}
                 else:
                     return None
 
