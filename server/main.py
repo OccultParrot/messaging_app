@@ -23,13 +23,13 @@ class Message(BaseModel):
 class MessagesGet(BaseModel):
     contents: list[Message]
 
-class UsersGet(BaseModel):
-    contents: list[User]
-
 class User(BaseModel):
     id: int | None = None
     username: str
     color: str # As a hex code string, e.g., "#FF5733"
+
+class UsersGet(BaseModel):
+    contents: list[User]
 
 app = FastAPI()
 
