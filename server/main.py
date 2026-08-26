@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response, HTTPException
+from fastapi import FastAPI, Response, HTTPException, WebSocket
 from pydantic import BaseModel
 
 from database_client import DatabaseClient
@@ -108,7 +108,7 @@ async def create_user(user: User):
     return user_data
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket, user_id: int):
+async def websocket_endpoint(websocket: WebSocket, user_id: int):
     await websocket.accept()
     while True:
         data = await websocket.receive_text()
