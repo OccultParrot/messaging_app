@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, HTTPException
 from pydantic import BaseModel
 
 from database_client import DatabaseClient
@@ -48,74 +48,63 @@ Routes we need.
 """
 
 @app.get("/api/messages", response_model=MessagesGet)
-async def get_messages(response: Response):
+async def get_messages():
     messages = db_client.get_messages()
-    response.status_code = 200
     return {"contents": messages}
 
 @app.post("/api/messages")
-async def create_message(message: Message, response: Response):
+async def create_message(message: Message):
     db_client.put_message(message.model_dump())
-    response.status_code = 201
     return {"status": "Message created"}
 
 @app.get("/api/users", response_model=UsersGet)
-async def get_users(response: Response):
+async def get_users():
     users = db_client.get_users()
-    response.status_code = 200
     return {"contents": users}
 
 @app.get("/api/users/{user_id}", response_model=User)
-async def get_user(user_id: int, response: Response):
+async def get_user(user_id: int):
     user = db_client.get_user(user_id)
     if user is None:
-        response.status_code = 404
-        return {"error": "User not found"}
-    response.status_code = 200
+        raise HTTPException(status_code=404, detail="User not found.")
     return User(id=user["id"], username=user["username"], color=user["color"])
 
 @app.get("/api/auth/{username}", response_model=User)
-async def authenticate_user(username: str, response: Response):
+async def authenticate_user(username: str):
     user = db_client.get_user_by_username(username)
 
     print(user)
 
     if user is None:
-        response.status_code = 404
-        return {}
+        raise HTTPException(status_code=404, detail="User not found.")
 
     if user["logged_in"]:
-        response.status_code = 400
+        raise HTTPException(status_code=400, detail="User already logged in.")
         return {"error": "User already logged in"}
 
     db_client.login_user(user["id"])  # Log the user in
     
-    response.status_code = 200
     return User(id=user["id"], username=user["username"], color=user["color"])
 
 @app.post("/api/logout/{username}")
-async def logout_user(username: str, response: Response):
+async def logout_user(username: str):
     user = db_client.get_user_by_username(username)
     if user is None:
-        response.status_code = 404
-        return {"error": "User not found"}
+        raise HTTPException(status_code=404, detail="User not found.")
 
     if not user["logged_in"]:
-        response.status_code = 400
-        return {"error": "User is not logged in"}
+        raise HTTPException(status_code=400, detail="User is not logged in.")
 
     db_client.logout_user(user["id"])  # Log the user out
     
-    response.status_code = 200
     return {"status": "User logged out"}
 
 @app.post("/api/users", response_model=User)
-async def create_user(user: User, response: Response):
+async def create_user(user: User):
     db_client.put_user(user.model_dump())
 
     user_data = db_client.get_user_by_username(user.username)
 
-    response.status_code = 201
     return user_data
 
 @app.websocket("/ws")
