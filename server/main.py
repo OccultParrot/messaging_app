@@ -56,7 +56,8 @@ async def get_user(user_id: int):
     user = db_client.get_user(user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found.")
-    return User(id=user["id"], username=user["username"], color=user["color"])
+
+    return user
 
 @app.get("/api/auth/{username}", response_model=User)
 async def authenticate_user(username: str):
@@ -69,7 +70,6 @@ async def authenticate_user(username: str):
 
     if user["logged_in"]:
         raise HTTPException(status_code=400, detail="User already logged in.")
-        return {"error": "User already logged in"}
 
     db_client.login_user(user["id"])  # Log the user in
     
@@ -100,12 +100,26 @@ async def create_user(user: User):
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
     await websocket.accept()
     user = db_client.get_user(user_id)
+    print(user)
     if not user:
         return
     
     await connection_manager.connect(user, websocket)
     
     while True:
-        data = await websocket.receive_text()
+        data = await websocket.receive_json()
+
+        user_id = data.get("user_id")
+        message = data.get("message", "")
+
+        user_data = db_client.get_user(user_id)
+        if not user_data:
+            print("Error, Null user")
+            continue
+        
         # Here you can handle the received data, e.g., broadcast it to other clients
-        await websocket.send_text(f"Message received: {data}")
+        await connection_manager.send_message({
+            "username": user_data.username,
+            "color": user_data.color,
+            "message": message
+        }, user_id)
