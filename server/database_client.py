@@ -1,4 +1,5 @@
 import psycopg
+from data_types import User
 
 class DatabaseClient:
     def __init__(self, database_url: str):
@@ -48,7 +49,8 @@ class DatabaseClient:
                 cur.execute("SELECT id, username, color, logged_in FROM users WHERE id = %s", (user_id,))
                 row = cur.fetchone()
                 if row:
-                    return {"id": row[0], "username": row[1], "color": row[2], "logged_in": row[3]}
+                    return User(id=row[0], username=row[1], color=row[2], logged_in=row[3])
+                    # return {"id": row[0], "username": row[1], "color": row[2], "logged_in": row[3]}
                 else:
                     return None
 

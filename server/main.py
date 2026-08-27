@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Response, HTTPException, WebSocket
-from pydantic import BaseModel
 
+from data_types import User, UsersGet, Message, MessagesGet
 from database_client import DatabaseClient
+from connection_manager import ConnectionManager
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -15,21 +16,9 @@ if not db_url:
 
 db_client = DatabaseClient(db_url)
 
-class Message(BaseModel):
-    id: int | None = None
-    content: str
-    user_id: int
+connection_manager = ConnectionManager()
 
-class MessagesGet(BaseModel):
-    contents: list[Message]
 
-class User(BaseModel):
-    id: int | None = None
-    username: str
-    color: str # As a hex code string, e.g., "#FF5733"
-
-class UsersGet(BaseModel):
-    contents: list[User]
 
 app = FastAPI()
 
@@ -110,6 +99,12 @@ async def create_user(user: User):
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
     await websocket.accept()
+    user = db_client.get_user(user_id)
+    if not user:
+        return
+    
+    await connection_manager.connect(user, websocket)
+    
     while True:
         data = await websocket.receive_text()
         # Here you can handle the received data, e.g., broadcast it to other clients
