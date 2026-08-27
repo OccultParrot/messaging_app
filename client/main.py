@@ -8,9 +8,12 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input, RichLog
 
-BACKEND_URL = "https://api.occultparrot.dev"
+import atexit
+
+DOMAIN = "127.0.0.1:8000"
+BACKEND_URL = f"http://{DOMAIN}"
 API_URL = f"{BACKEND_URL}/api"
-WEBSOCKET_URL = "wss://api.occultparrot.dev/ws"
+WEBSOCKET_URL = f"ws://{DOMAIN}/ws"
 
 console = Console()
 
@@ -76,7 +79,6 @@ class ChatApp(App):
         yield Header()
         yield RichLog(id="messages", wrap=True, markup=True, highlight=True)
         yield Input(placeholder="Type a message and press Enter...", id="message_input")
-        yield Footer()
 
     def on_mount(self) -> None:
         self.query_one(Input).focus()
@@ -85,15 +87,16 @@ class ChatApp(App):
     # Runs in the background so the UI stays responsive while we wait on incoming messages.
     @work(exclusive=True)
     async def connect_websocket(self) -> None:
-        log = self.query_one(RichLog)
-        try:
-            async with websockets.connect(f"{WEBSOCKET_URL}?user_id={self.user_id}") as ws:
-                self.websocket = ws
-                log.write("[green]Connected to chat server.[/green]")
-                async for raw_message in ws:
-                    self.handle_incoming(raw_message, log)
-        except Exception as e:
-            log.write(f"[red]Connection error: {e}[/red]")
+        for i in range(20):
+            log = self.query_one(RichLog)
+            try:
+                async with websockets.connect(f"{WEBSOCKET_URL}?user_id={self.user_id}") as ws:
+                    self.websocket = ws
+                    log.write("[green]Connected to chat server.[/green]")
+                    async for raw_message in ws:
+                        self.handle_incoming(str(raw_message), log)
+            except Exception as e:
+                log.write(f"[red]Connection error: {e}[/red]")
 
     def handle_incoming(self, raw_message: str, log: RichLog) -> None:
         try:
@@ -102,6 +105,14 @@ class ChatApp(App):
             log.write(raw_message)
             return
 
+        if data.get("joined", None):
+            user = data.get("joined")
+            username = user.get("username", "unkown")
+            color = user.get("color", "white")
+            log.write(f"[{color}]{username}[/][yellow] joined the chat!")
+            return
+
+        self.notify(str(data))
         username = data.get("username", "unknown")
         color = data.get("color", "white")
         content = data.get("message", "")
